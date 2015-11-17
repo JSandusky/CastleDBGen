@@ -16,7 +16,6 @@ Process CastleDB database JSON files and generates source code for both the type
 * Lists
 * References
 * Color
-* Image (as String)
 * File (as String)
 
 **Unsupported CastleDB data types**
@@ -25,6 +24,7 @@ Process CastleDB database JSON files and generates source code for both the type
 * TileLayer
 * Custom
 * Dynamic
+* Image (seperate IMG database, base64 encoding - will probably fork CastleDB to work with Urho3D resources in the future)
 
 ## Command line usage printout:
 
