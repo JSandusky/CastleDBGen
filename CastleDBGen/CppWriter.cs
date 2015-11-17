@@ -111,8 +111,9 @@ namespace CastleDBGen
                             cppClassStr += String.Format("{0}{1} = value[\"{1}\"].GetUInt();\r\n", GetTabString(tabDepth + 0), column.Name);
                             break;
                         case CastleType.Image:
-                            classStr += String.Format(CPPProperty, "String", column.Name, GetTabString(tabDepth + 0));
-                            cppClassStr += String.Format("{0}{1} = value[\"{1}\"].GetString();\r\n", GetTabString(tabDepth + 0), column.Name);
+                            errors.Add(String.Format("Sheet {0}, type {1} unsupported", column.Name, column.TypeID.ToString()));
+                            //classStr += String.Format(CPPProperty, "String", column.Name, GetTabString(tabDepth + 0));
+                            //cppClassStr += String.Format("{0}{1} = value[\"{1}\"].GetString();\r\n", GetTabString(tabDepth + 0), column.Name);
                             break;
                         case CastleType.Integer:
                             classStr += String.Format(CPPProperty, "int", column.Name, GetTabString(tabDepth + 0));

@@ -83,7 +83,7 @@ namespace CastleDBGen
                         classStr += String.Format(ASProperty, "uint", column.Name, GetTabString(tabDepth + 0));
                         break;
                     case CastleType.Image:
-                        classStr += String.Format(ASProperty, "String", column.Name, GetTabString(tabDepth + 0));
+                        errors.Add(String.Format("Sheet {0}, type {1} unsupported", column.Name, column.TypeID.ToString()));
                         break;
                     case CastleType.Integer:
                         classStr += String.Format(ASProperty, "int", column.Name, GetTabString(tabDepth + 0));
@@ -142,8 +142,9 @@ namespace CastleDBGen
                                 classStr += string.Format("{0}case {1}: {2} = {3}::{4}; break;\r\n", GetTabString(tabDepth + 1), i, col.Name, "E_" + col.Name.ToUpper(), col.Enumerations[i].ToUpper());
                             classStr += string.Format("{0}}}\r\n", GetTabString(tabDepth + 1));
                             break;
-                        case CastleType.File:
                         case CastleType.Image:
+                            break;
+                        case CastleType.File:
                             classStr += string.Format("{0}{1} = value[\"{1}\"].GetString();\r\n", GetTabString(tabDepth + 1), col.Name);
                             break;
                         case CastleType.Flags:

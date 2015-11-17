@@ -47,7 +47,6 @@ namespace CastleDBGen
                         fileText += string.Format("{0}self.{1} = value[\"{1}\"]:GetInt()\r\n", GetTabString(tabDepth + 0), col.Name);
                         break;
                     case CastleType.File:
-                    case CastleType.Image:
                         fileText += string.Format("{0}self.{1} = value[\"{1}\"]:GetString()\r\n", GetTabString(tabDepth + 0), col.Name);
                         break;
                     case CastleType.Flags:
