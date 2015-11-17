@@ -93,7 +93,7 @@ namespace CastleDBGen
                         errors.Add(String.Format("Sheet {0}, type {1} unsupported", column.Name, column.TypeID.ToString()));
                         break;
                     case CastleType.Enum:
-                        classStr += String.Format(ASProperty, String.Format("E_{0}", column.Name.ToUpper()), column.Name, GetTabString(tabDepth + 0));
+                        classStr += String.Format(ASProperty, "int", column.Name, GetTabString(tabDepth + 0));
                         break;
                     case CastleType.File:
                         classStr += String.Format(ASProperty, "String", column.Name, GetTabString(tabDepth + 0));
@@ -169,22 +169,9 @@ namespace CastleDBGen
                         case CastleType.Enum:
 //TODO! With every angelscript update check for enums updated to accept int
                             if (!jsonOff)
-                            {
-                                classStr += string.Format("{0}switch (value[\"{1}\"].GetInt()) {{\r\n", GetTabString(tabDepth + 1), col.Name);
-                                for (int i = 0; i < col.Enumerations.Count; ++i)
-                                    classStr += string.Format("{0}case {1}: {2} = {3}::{4}; break;\r\n", GetTabString(tabDepth + 1), i, col.Name, "E_" + col.Name.ToUpper(), col.Enumerations[i].ToUpper());
-                                classStr += string.Format("{0}}}\r\n", GetTabString(tabDepth + 1));
-                            }
-
-                            loadBinStr += string.Format("{0}switch (source.ReadInt()) {{\r\n", GetTabString(tabDepth + 1), col.Name);
-                            for (int i = 0; i < col.Enumerations.Count; ++i)
-                                loadBinStr += string.Format("{0}case {1}: {2} = {3}::{4}; break;\r\n", GetTabString(tabDepth + 1), i, col.Name, "E_" + col.Name.ToUpper(), col.Enumerations[i].ToUpper());
-                            loadBinStr += string.Format("{0}}}\r\n", GetTabString(tabDepth + 1));
-
-                            saveBinStr += string.Format("{0}switch ({1}) {{\r\n", GetTabString(tabDepth + 1), col.Name);
-                            for (int i = 0; i < col.Enumerations.Count; ++i)
-                                saveBinStr += string.Format("{0}case {1}: dest.WriteInt({2}); break;\r\n", GetTabString(tabDepth + 1), "E_" + col.Enumerations[i].ToUpper(), i);
-                            saveBinStr += string.Format("{0}}}\r\n", GetTabString(tabDepth + 1));
+                                classStr += string.Format("{0}{1} = value[\"{1}\"].GetInt();\r\n", GetTabString(tabDepth + 1), col.Name);
+                            loadBinStr += string.Format("{0}{1} = source.ReadInt();\r\n", GetTabString(tabDepth + 1), col.Name);
+                            saveBinStr += string.Format("{0}dest.WriteInt({1});\r\n", GetTabString(tabDepth + 1), col.Name);
                             break;
 
                         case CastleType.Image:
