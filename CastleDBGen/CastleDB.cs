@@ -70,6 +70,19 @@ namespace CastleDBGen
         public List<object> Values = new List<object>();
     }
 
+    public class CastleCustomCtor
+    {
+        public String Name;
+        public List<string> ArgNames = new List<string>();
+        public List<string> ArgTypes = new List<string>();
+    }
+
+    public class CastleCustom
+    {
+        public String Name;
+        public List<CastleCustomCtor> Constructors = new List<CastleCustomCtor>();
+    }
+
     public class CastleColumn
     {
         public static readonly char[] STRSPLIT = { ':' };
@@ -154,11 +167,14 @@ namespace CastleDBGen
     public class CastleDB
     {
         public List<CastleSheet> Sheets = new List<CastleSheet>();
+        public List<CastleCustom> CustomTypes = new List<CastleCustom>();
 
         JObject root;
         public CastleDB(string file)
         {
             root = Newtonsoft.Json.Linq.JObject.Parse(System.IO.File.ReadAllText(file));
+            JArray customArray = root.Property("customTypes").Value as JArray;
+            LoadCustomTypes(customArray);
             JArray sheetsArray = root.Property("sheets").Value as JArray;
             LoadSheets(sheetsArray);
         }
@@ -267,6 +283,42 @@ namespace CastleDBGen
                     else
                         newLine.Values.Add(property.Value.ToString());
                 }
+            }
+        }
+
+        void LoadCustomTypes(JArray customArray)
+        {
+            if (customArray == null)
+                throw new Exception("No data found for custom types");
+            foreach (JObject obj in customArray)
+            {
+                string typeName = obj.Property("name").Value.ToString();
+                JArray casesArray = obj.Property("cases").Value as JArray;
+                CastleCustom customType = new CastleCustom { Name = typeName };
+                if (casesArray != null)
+                {
+                    foreach (JObject ctor in casesArray)
+                    {
+                        string ctorName = ctor.Property("name").Value.ToString();
+                        JArray argsArray = obj.Property("args").Value as JArray;
+                        
+                        CastleCustomCtor customCtor = new CastleCustomCtor { Name = ctorName };
+
+                        if (argsArray != null)
+                        {
+                            foreach (JObject arg in argsArray)
+                            {
+                                string typeStr = arg.Property("typeStr").Value.ToString();
+                                string argName = arg.Property("name").Value.ToString();
+                                customCtor.ArgNames.Add(argName);
+                                customCtor.ArgTypes.Add(typeStr);
+                            }
+                        }
+                        customType.Constructors.Add(customCtor);
+                    }
+                }
+                if (customType.Constructors.Count > 0)
+                    CustomTypes.Add(customType);
             }
         }
     }

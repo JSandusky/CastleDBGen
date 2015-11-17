@@ -264,7 +264,10 @@ namespace CastleDBGen
             }
 
     // Generate the database class
-            fileText += String.Format("\r\nclass {0} {{\r\n", dbName);
+            if (inherit.Length == 0)
+                fileText += String.Format("\r\nclass {0} {{\r\n", dbName);
+            else
+                fileText += String.Format("\r\nclass {0} : {1} {{\r\n", dbName, inherit);
             foreach (CastleSheet sheet in database.Sheets)
             {
                 if (sheet.Name.Contains("@"))

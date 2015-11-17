@@ -280,7 +280,10 @@ namespace CastleDBGen
             }
 
     // Write the Database class
-            headerText += string.Format("\r\nclass {0} {{\r\npublic:\r\n{1}/// Destruct.\r\n{1}virtual ~{0}();\r\n\r\n", dbName, GetTabString(tabDepth + 0));
+            if (inherit.Length == 0)
+                headerText += string.Format("\r\nclass {0} {{\r\npublic:\r\n{1}/// Destruct.\r\n{1}virtual ~{0}();\r\n\r\n", dbName, GetTabString(tabDepth + 0));
+            else
+                headerText += string.Format("\r\nclass {0} : {2} {{\r\npublic:\r\n{1}/// Destruct.\r\n{1}virtual ~{0}();\r\n\r\n", dbName, GetTabString(tabDepth + 0), inherit);
             foreach (CastleSheet sheet in database.Sheets)
             {
                 if (sheet.Name.Contains("@"))

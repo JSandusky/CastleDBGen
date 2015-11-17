@@ -18,6 +18,8 @@ namespace CastleDBGen
                 return 2;
             else if (str.Equals("lua"))
                 return 3;
+            else if (str.Equals("asbind"))
+                return 4;
             return -1;
         }
 
@@ -40,6 +42,7 @@ namespace CastleDBGen
                 Console.WriteLine("        option: as");
                 Console.WriteLine("        option: cs");
                 Console.WriteLine("        option: lua");
+                Console.WriteLine("        option: asbind (generate AS bindings)");
                 Console.WriteLine("    -hd: <header path string>, C++ only");
                 Console.WriteLine("    -db: name for database class");
                 Console.WriteLine("        default: GameDatabase");
@@ -107,6 +110,10 @@ namespace CastleDBGen
             case 3:
                 outName = System.IO.Path.ChangeExtension(outName, ".lua");
                 new LuaWriter().WriteClassDefinitions(db, outName, args[0], switches, errors);
+                break;
+            case 4:
+                outName = System.IO.Path.ChangeExtension(outName, ".cpp");
+                new ASBindingWriter().WriteClassDefinitions(db, outName, args[0], switches, errors);
                 break;
             }
 
