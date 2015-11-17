@@ -48,7 +48,9 @@ namespace CastleDBGen
                 Console.WriteLine("        option: int");
                 Console.WriteLine("    -bin: type of binary read/write to support");
                 Console.WriteLine("        default: none");
-                Console.WriteLine("        option: rw");
+                Console.WriteLine("        option: on");
+                Console.WriteLine("        option: only");
+                Console.WriteLine("    -inherit: <classname>");
                 Console.WriteLine(" ");
                 Console.WriteLine("examples:");
                 Console.WriteLine("    CastleDBGen C:\\MyDdatabase.cdb -lang cpp -ns MyNamespace");

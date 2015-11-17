@@ -9,6 +9,7 @@ namespace CastleDBGen
     internal class CppWriter : BaseDBWriter
     {
         static readonly string CPPClassStart = "\r\nclass {0} {{\r\npublic:\r\n"; // class SHEETNAME
+        static readonly string CPPClassStartInherit = "\r\nclass {0} : public {1} {{\r\npublic:\r\n"; // class SHEETNAME
         static readonly string CPPClassEnd = "};\n";
         static readonly string CPPProperty = "{2}{0} {1};\n"; // Type name;\n
 
@@ -26,8 +27,16 @@ namespace CastleDBGen
                 integerIDs = switches["id"].Equals("int");
 
             bool binIO = false;
+            bool jsonOff = false;
             if (switches.ContainsKey("bin"))
-                binIO = switches["bin"].Equals("rw");
+            {
+                binIO = switches["bin"].Equals("on") || switches["bin"].Equals("only");
+                jsonOff = switches["bin"].Equals("only");
+            }
+
+            string inherit = "";
+            if (switches.ContainsKey("inherit"))
+                inherit = switches["inherit"];
 
             string headerPath = System.IO.Path.ChangeExtension(fileBase, ".h");
             if (switches.ContainsKey("hd"))
@@ -40,6 +49,11 @@ namespace CastleDBGen
                 headerText += "#include <Urho3D/IO/Deserializer.h>\r\n";
             headerText += "#include <Urho3D/Resource/JSONFile.h>\r\n";
             headerText += "#include <Urho3D/Resource/JSONValue.h>\r\n";
+            if (inherit.Equals("RefCounted"))
+            {
+                headerText += "#include <Urho3D/Container/Ptr.h>\r\n";
+                headerText += "#include <Urho3D/Container/RefCounted.h>\r\n";
+            }
             if (binIO)
                 headerText += "#include <Urho3D/IO/Serializer.h>\r\n";
             headerText += "#include <Urho3D/Container/Str.h>\r\n";
@@ -91,7 +105,7 @@ namespace CastleDBGen
             foreach (CastleSheet sheet in database.Sheets)
             {
                 string sheetName = sheet.Name.Replace('@', '_');
-                string classStr = String.Format(CPPClassStart, sheetName);
+                string classStr = inherit.Length > 0 ? String.Format(CPPClassStartInherit, sheetName, inherit) : String.Format(CPPClassStart, sheetName);
                 string cppClassStr = String.Format("{1}\nvoid {0}::Load(JSONValue& value) {{\r\n", sheetName, GetTabString(tabDepth));
                 string binLoadClassStr = "";
                 string binWriteClassStr = "";
@@ -157,16 +171,25 @@ namespace CastleDBGen
                             errors.Add(String.Format("Sheet {0}, type {1} unsupported", column.Name, column.TypeID.ToString()));
                             break;
                         case CastleType.List:
-                            classStr += String.Format("{0}Vector<{1}*> {2};\r\n", GetTabString(tabDepth + 0), string.Format("{0}_{1}", sheet.Name, column.Name), column.Name);
+                            if (inherit.Equals("RefCounted"))
+                                classStr += String.Format("{0}Vector<SharedPtr<{1}> > {2};\r\n", GetTabString(tabDepth + 0), string.Format("{0}_{1}", sheet.Name, column.Name), column.Name);
+                            else
+                                classStr += String.Format("{0}Vector<{1}*> {2};\r\n", GetTabString(tabDepth + 0), string.Format("{0}_{1}", sheet.Name, column.Name), column.Name);
                             
                             cppClassStr += string.Format("{0}JSONValue& {1}Array = value[\"{1}\"];\r\n", GetTabString(tabDepth + 0), column.Name);
                             cppClassStr += string.Format("{0}for (unsigned i = 0; i < {1}Array.Size(); ++i) {{\r\n", GetTabString(tabDepth + 0), column.Name);
-                            cppClassStr += string.Format("{0}{1}* val = new {1}();\r\n", GetTabString(tabDepth + 1), string.Format("{0}_{1}", sheet.Name, column.Name));
+                            if (inherit.Equals("RefCounted"))
+                                cppClassStr += string.Format("{0}SharedPtr<{1}> val(new {1}());\r\n", GetTabString(tabDepth + 1), string.Format("{0}_{1}", sheet.Name, column.Name));
+                            else
+                                cppClassStr += string.Format("{0}{1}* val = new {1}();\r\n", GetTabString(tabDepth + 1), string.Format("{0}_{1}", sheet.Name, column.Name));
                             cppClassStr += string.Format("{0}val->Load({1}Array[i]);\r\n{0}{2}.Push(val);\r\n", GetTabString(tabDepth + 1), column.Name, column.Name);
                             cppClassStr += string.Format("{0}}} \r\n", GetTabString(tabDepth + 0));
 
                             binLoadClassStr += string.Format("{0}const unsigned {1}Ct = source.ReadUInt();\r\n{0}for (unsigned i = 0; i < {1}Ct; ++i) {{\r\n", GetTabString(tabDepth + 0), column.Name);
-                            binLoadClassStr += string.Format("{0}{1}* val = new {1}();\r\n", GetTabString(tabDepth + 1), string.Format("{0}_{1}", sheet.Name, column.Name));
+                            if (inherit.Equals("RefCounted"))
+                                binLoadClassStr += string.Format("{0}SharedPtr<{1}> val(new {1}());\r\n", GetTabString(tabDepth + 1), string.Format("{0}_{1}", sheet.Name, column.Name));
+                            else
+                                binLoadClassStr += string.Format("{0}{1}* val = new {1}();\r\n", GetTabString(tabDepth + 1), string.Format("{0}_{1}", sheet.Name, column.Name));
                             binLoadClassStr += string.Format("{0}val->Load(source);\r\n{0}{2}.Push(val);\r\n", GetTabString(tabDepth + 1), column.Name, column.Name);
                             binLoadClassStr += string.Format("{0}}} \r\n", GetTabString(tabDepth + 0));
 
@@ -176,7 +199,10 @@ namespace CastleDBGen
 
                             break;
                         case CastleType.Ref:
-                            classStr += String.Format("{0}{1}* {2};\r\n", GetTabString(tabDepth + 0), column.Key, column.Name);
+                            if (inherit.Equals("RefCounted"))
+                                classStr += String.Format("{0}SharedPtr<{1}> {2};\r\n", GetTabString(tabDepth + 0), column.Key, column.Name);
+                            else
+                                classStr += String.Format("{0}{1}* {2};\r\n", GetTabString(tabDepth + 0), column.Key, column.Name);
                             classStr += String.Format("{0}String {2}Key;\r\n", GetTabString(tabDepth + 0), column.Key, column.Name);
                             cppClassStr += String.Format("{0}{1} = 0x0;\r\n", GetTabString(tabDepth + 0), column.Name);
                             cppClassStr += String.Format("{0}{1}Key = value[\"{1}\"].GetString();\r\n", GetTabString(tabDepth + 0), column.Name);
@@ -203,7 +229,8 @@ namespace CastleDBGen
 
                 classStr += string.Format("\r\n{0}/// Destruct.\r\n{0}virtual ~{1}();\r\n", GetTabString(tabDepth + 0), sheetName);
 
-                classStr += string.Format("\r\n{0}/// Loads the data from a JSON value.\r\n{0}void Load(JSONValue& value);\r\n", GetTabString(tabDepth + 0));
+                if (!jsonOff)
+                    classStr += string.Format("\r\n{0}/// Loads the data from a JSON value.\r\n{0}void Load(JSONValue& value);\r\n", GetTabString(tabDepth + 0));
                 if (binIO)
                 {
                     classStr += string.Format("\r\n{0}/// Loads the data from a binary Deserializer.\r\n{0}void Load(Deserializer& source);\r\n", GetTabString(tabDepth + 0));
@@ -216,7 +243,8 @@ namespace CastleDBGen
                 binWriteClassStr += "}\r\n";
                 binLoadClassStr += "}\r\n";
                 headerText += classStr;
-                sourceText += cppClassStr;
+                if (!jsonOff)
+                    sourceText += cppClassStr;
                 if (binIO)
                 {
                     sourceText += binLoadClassStr;
@@ -257,9 +285,13 @@ namespace CastleDBGen
             {
                 if (sheet.Name.Contains("@"))
                     continue;
-                headerText += string.Format("{0}Vector<{1}*> {1}List;\r\n", GetTabString(tabDepth + 0), sheet.Name);
+                if (inherit.Equals("RefCounted"))
+                    headerText += string.Format("{0}Vector<SharedPtr<{1}> > {1}List;\r\n", GetTabString(tabDepth + 0), sheet.Name);
+                else
+                    headerText += string.Format("{0}Vector<{1}*> {1}List;\r\n", GetTabString(tabDepth + 0), sheet.Name);
             }
-            headerText += string.Format("\r\n{0}/// Load from JSON file.\r\n{0}void Load(JSONFile* file);\r\n", GetTabString(tabDepth + 0));
+            if (!jsonOff)
+                headerText += string.Format("\r\n{0}/// Load from JSON file.\r\n{0}void Load(JSONFile* file);\r\n", GetTabString(tabDepth + 0));
             if (binIO)
             {
                 headerText += string.Format("\r\n{0}/// Load from binary Deserializer.\r\n{0}void Load(Deserializer& file);\r\n", GetTabString(tabDepth + 0));
@@ -278,34 +310,40 @@ namespace CastleDBGen
             sourceText += "}\r\n";
 
         // Database load
-            sourceText += string.Format("\r\n{0}void {1}::Load(JSONFile* file) {{\r\n", "", dbName);
-            sourceText += string.Format("{0}JSONValue& sheetsElem = file->GetRoot()[\"sheets\"];\r\n", GetTabString(tabDepth + 0));
-            sourceText += string.Format("{0}for (unsigned i = 0; i < sheetsElem.Size(); ++i) {{\r\n", GetTabString(tabDepth + 0));
-            sourceText += string.Format("{0}JSONValue& sheet = sheetsElem[i];\r\n{0}String sheetName = sheet[\"name\"].GetString();\r\n", GetTabString(tabDepth + 1));
-            bool first = true;
-            foreach (CastleSheet sheet in database.Sheets)
+            if (!jsonOff)
             {
-                if (sheet.Name.Contains("@"))
-                    continue;
-                sourceText += string.Format("{0}{2} (sheetName == \"{1}\") {{\r\n", GetTabString(tabDepth + 1), sheet.Name, first ? "if" : "else if");
-                sourceText += string.Format("{0}JSONValue& linesElem = sheet[\"lines\"];\r\n", GetTabString(tabDepth + 2));
-                sourceText += string.Format("{0}for (unsigned j = 0; j < linesElem.Size(); ++j) {{\r\n", GetTabString(tabDepth + 2));
-                sourceText += string.Format("{0}{1}* val = new {1}();\r\n{0}val->Load(linesElem[j]);\r\n{0}{1}List.Push(val);\r\n", GetTabString(tabDepth + 3), sheet.Name);
-                sourceText += string.Format("{0}}}\r\n", GetTabString(tabDepth + 2));
-                sourceText += string.Format("{0}}}\r\n", GetTabString(tabDepth + 1));
-                first = false;
-            }
-            sourceText += string.Format("{0}}}\r\n", GetTabString(tabDepth + 0));
-            // Write reference resolving code
-            foreach (CastleSheet sheet in database.Sheets)
-            {
-                if (sheet.HasReferences())
+                sourceText += string.Format("\r\n{0}void {1}::Load(JSONFile* file) {{\r\n", "", dbName);
+                sourceText += string.Format("{0}JSONValue& sheetsElem = file->GetRoot()[\"sheets\"];\r\n", GetTabString(tabDepth + 0));
+                sourceText += string.Format("{0}for (unsigned i = 0; i < sheetsElem.Size(); ++i) {{\r\n", GetTabString(tabDepth + 0));
+                sourceText += string.Format("{0}JSONValue& sheet = sheetsElem[i];\r\n{0}String sheetName = sheet[\"name\"].GetString();\r\n", GetTabString(tabDepth + 1));
+                bool first = true;
+                foreach (CastleSheet sheet in database.Sheets)
                 {
-                    sourceText += string.Format("{0}for (unsigned i = 0; i < {1}List.Size(); ++i)\r\n", GetTabString(tabDepth + 0), sheet.Name);
-                    sourceText += string.Format("{0}{1}List[i]->ResolveReferences(this);\r\n", GetTabString(tabDepth + 1), sheet.Name);
+                    if (sheet.Name.Contains("@"))
+                        continue;
+                    sourceText += string.Format("{0}{2} (sheetName == \"{1}\") {{\r\n", GetTabString(tabDepth + 1), sheet.Name, first ? "if" : "else if");
+                    sourceText += string.Format("{0}JSONValue& linesElem = sheet[\"lines\"];\r\n", GetTabString(tabDepth + 2));
+                    sourceText += string.Format("{0}for (unsigned j = 0; j < linesElem.Size(); ++j) {{\r\n", GetTabString(tabDepth + 2));
+                    if (inherit.Equals("RefCounted"))
+                        sourceText += string.Format("{0}SharedPtr<{1}> val(new {1}());\r\n{0}val->Load(linesElem[j]);\r\n{0}{1}List.Push(val);\r\n", GetTabString(tabDepth + 3), sheet.Name);
+                    else
+                        sourceText += string.Format("{0}{1}* val = new {1}();\r\n{0}val->Load(linesElem[j]);\r\n{0}{1}List.Push(val);\r\n", GetTabString(tabDepth + 3), sheet.Name);
+                    sourceText += string.Format("{0}}}\r\n", GetTabString(tabDepth + 2));
+                    sourceText += string.Format("{0}}}\r\n", GetTabString(tabDepth + 1));
+                    first = false;
                 }
+                sourceText += string.Format("{0}}}\r\n", GetTabString(tabDepth + 0));
+                // Write reference resolving code
+                foreach (CastleSheet sheet in database.Sheets)
+                {
+                    if (sheet.HasReferences())
+                    {
+                        sourceText += string.Format("{0}for (unsigned i = 0; i < {1}List.Size(); ++i)\r\n", GetTabString(tabDepth + 0), sheet.Name);
+                        sourceText += string.Format("{0}{1}List[i]->ResolveReferences(this);\r\n", GetTabString(tabDepth + 1), sheet.Name);
+                    }
+                }
+                sourceText += "}\r\n";
             }
-            sourceText += "}\r\n";
 
         // Database binary load/save
             if (binIO)
