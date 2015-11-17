@@ -65,6 +65,12 @@ namespace CastleDBGen
         public string ReferencedString;
     }
 
+    public class CastleCustomInst
+    {
+        public int ConstructorIndex;
+        public List<string> Parameters = new List<string>();
+    }
+
     public class CastleLine
     {
         public List<object> Values = new List<object>();
@@ -277,6 +283,26 @@ namespace CastleDBGen
                             FillSheetData(newTarget, property.Value as JArray);
                         newLine.Values.Add(newTarget);
                     }
+                    else if (col.TypeID == CastleType.Custom)
+                    {
+                        CastleCustom customType = CustomTypes.FirstOrDefault(c => c.Name.Equals(col.Key));
+                        if (customType != null)
+                        {
+                            JArray valArray = property.Value as JArray;
+                            CastleCustomInst inst = new CastleCustomInst();
+                            for (int i = 0; i < valArray.Count; ++i)
+                            {
+                                JToken token = valArray[i];
+                                string tokenText = token.ToString();
+                                if (i == 0)
+                                    inst.ConstructorIndex = int.Parse(tokenText);
+                                else
+                                    inst.Parameters.Add(tokenText);
+                            }
+                        }
+                        else
+                            throw new Exception("Unable to find custom type: " + col.Key);
+                    }
                     else if (col.TypeID == CastleType.Ref)
                         // Push a string for now
                         newLine.Values.Add(property.Value.ToString());
@@ -300,7 +326,7 @@ namespace CastleDBGen
                     foreach (JObject ctor in casesArray)
                     {
                         string ctorName = ctor.Property("name").Value.ToString();
-                        JArray argsArray = obj.Property("args").Value as JArray;
+                        JArray argsArray = ctor.Property("args").Value as JArray;
                         
                         CastleCustomCtor customCtor = new CastleCustomCtor { Name = ctorName };
 

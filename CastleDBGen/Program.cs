@@ -25,13 +25,13 @@ namespace CastleDBGen
 
         static void Main(string[] args)
         {
-            if (args.Length < 1)
+            if (args.Length < 2)
             {
                 Console.WriteLine("--------------------------------");
                 Console.WriteLine("CastleDBGen - (C) JSandusky 2015");
                 Console.WriteLine("--------------------------------");
                 Console.WriteLine("usage:");
-                Console.WriteLine("    CastleDBGen <input-db-path> [outputfilename]");
+                Console.WriteLine("    CastleDBGen <input-db-path> <outputfilename>");
                 Console.WriteLine(" ");
                 Console.WriteLine("switches:");
                 Console.WriteLine("    -ns: namespace, follow with namespace");
