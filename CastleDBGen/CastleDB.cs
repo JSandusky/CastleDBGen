@@ -62,7 +62,7 @@ namespace CastleDBGen
     public class CastleRef
     {
         public CastleLine ReferenceLine;
-        public string ReferencedString;
+        public string Referencedstring;
     }
 
     public class CastleCustomInst
@@ -78,14 +78,14 @@ namespace CastleDBGen
 
     public class CastleCustomCtor
     {
-        public String Name;
+        public string Name;
         public List<string> ArgNames = new List<string>();
         public List<string> ArgTypes = new List<string>();
     }
 
     public class CastleCustom
     {
-        public String Name;
+        public string Name;
         public List<CastleCustomCtor> Constructors = new List<CastleCustomCtor>();
     }
 
@@ -253,7 +253,7 @@ namespace CastleDBGen
                             if (lookupSheet != null)
                             {
                                 line.Values[i] = new CastleRef { 
-                                    ReferencedString = text, ReferenceLine = 
+                                    Referencedstring = text, ReferenceLine = 
                                     lookupSheet.Lines.FirstOrDefault(l => l.Values[lookupSheet.IndexOfID()].Equals(text)) };
                             }
                             else
@@ -277,7 +277,7 @@ namespace CastleDBGen
                         continue;
                     if (col.TypeID == CastleType.List)
                     {
-                        string newSheetName = String.Format("{0}@{1}", targetSheet.Name, col.Name);
+                        string newSheetName = string.Format("{0}@{1}", targetSheet.Name, col.Name);
                         CastleSheet newTarget = Sheets.FirstOrDefault(s => s.Name.Equals(newSheetName)).Clone();
                         if (newTarget != null)
                             FillSheetData(newTarget, property.Value as JArray);

@@ -15,11 +15,11 @@ public enum E_TESTENUM {
 }
 
 public class Test {
-    public String Name { get; set; }
+    public string Name { get; set; }
     public List<Test_Testl> Testl = new List<Test_Testl>();
-    public String Tests { get; set; }
+    public string Tests { get; set; }
     public Test TestRef = null;
-    private String TestRefKey;
+    private string TestRefKey;
     //public Color TestC { get; set; }
 
     public void Load(JObject value) {
@@ -46,7 +46,7 @@ public class Test {
 }
 
 public class Test_Testl {
-    public String neww { get; set; }
+    public string neww { get; set; }
     public bool sub { get; set; }
 
     public void Load(JObject value) {
@@ -59,13 +59,13 @@ public class Test_Testl {
 }
 
 public class SecondSheet {
-    public String ID { get; set; }
+    public string ID { get; set; }
     public uint FlagTest { get; set; }
     public E_TESTENUM TestEnum { get; set; }
     public int Value { get; set; }
-    public String Text { get; set; }
+    public string Text { get; set; }
     public SecondSheet NewRefTest = null;
-    private String NewRefTestKey;
+    private string NewRefTestKey;
 
     public void Load(JObject value) {
         ID = value.Property("ID").Value.ToString();
@@ -94,7 +94,7 @@ public class MyDB {
         JArray sheetsElem = file.Property("sheets").Value as JArray;
         for (int i = 0; i < sheetsElem.Count; ++i) {
             JObject sheet = sheetsElem[i] as JObject;
-            String sheetName = sheet.Property("name").Value.ToString();
+            string sheetName = sheet.Property("name").Value.ToString();
             if (sheetName.Equals("Test")) {
                 JArray linesElem = sheet.Property("lines").Value as JArray;
                 for (int j = 0; j < linesElem.Count; ++j) {

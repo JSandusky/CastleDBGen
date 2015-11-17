@@ -64,7 +64,7 @@ namespace CastleDBGen
 
             if (!System.IO.File.Exists(args[0]))
             {
-                Console.WriteLine(String.Format("ERROR: File does not exist {0}", args[0]));
+                Console.WriteLine(string.Format("ERROR: File does not exist {0}", args[0]));
                 return;
             }
 
@@ -119,7 +119,7 @@ namespace CastleDBGen
 
             foreach (string error in errors)
             {
-                Console.WriteLine(String.Format("ERR: {0}", error));
+                Console.WriteLine(string.Format("ERR: {0}", error));
             }
 
             MyNamespace.MyDB dbTest = new MyNamespace.MyDB();

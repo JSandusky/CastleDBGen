@@ -10,7 +10,7 @@ namespace CastleDBGen
     {
         public abstract void WriteClassDefinitions(CastleDB database, string fileBase, string sourceFileName, Dictionary<string, string> switches, List<string> errors);
 
-        protected string GetTabString(int ct)
+        protected string GetTabstring(int ct)
         {
             string str = "    ";
             for (int i = 0; i < ct; ++i)

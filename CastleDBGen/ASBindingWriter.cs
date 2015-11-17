@@ -51,7 +51,7 @@ namespace CastleDBGen
                 string sheetName = sheet.Name.Replace("@", "_");
                 // Factory constructor
                 sourceCode += string.Format("static {0}* Construct{0}() {{\r\n", sheetName);
-                sourceCode += string.Format("{0}return new {1}();\r\n}}", GetTabString(tabDepth + 0), sheetName);
+                sourceCode += string.Format("{0}return new {1}();\r\n}}", GetTabstring(tabDepth + 0), sheetName);
 
                 foreach (CastleColumn col in sheet.Columns)
                 {
@@ -59,13 +59,13 @@ namespace CastleDBGen
                     if (col.TypeID == CastleType.List)
                     {
                         sourceCode += string.Format("static CScriptArray* {0}Get{1}({0}& obj) {{\r\n", sheetName, col.Name);
-                        sourceCode += string.Format("{0}return VectorToArray<{1}>(obj.{2}, \"Array<{1}@+>\");\r\n}}", GetTabString(tabDepth + 0), col.Key, col.Name);
+                        sourceCode += string.Format("{0}return VectorToArray<{1}>(obj.{2}, \"Array<{1}@+>\");\r\n}}", GetTabstring(tabDepth + 0), col.Key, col.Name);
                     }
                 }
             }
         // Database constructor
             sourceCode += string.Format("static {0}* Construct{0}() {{\r\n", dbName);
-            sourceCode += string.Format("{0}return new {1}();\r\n}}", GetTabString(tabDepth + 0), dbName);
+            sourceCode += string.Format("{0}return new {1}();\r\n}}", GetTabstring(tabDepth + 0), dbName);
 
             headerCode += "class asIScriptEngine;\r\n";
             headerCode += string.Format("void Register{0}(asIScriptEngine* engine);\r\n", dbName);
@@ -103,7 +103,7 @@ namespace CastleDBGen
                         case CastleType.UniqueIdentifier:
                         case CastleType.File:
                         case CastleType.Text:
-                            sourceCode += string.Format("    engine->RegisterObjectProperty(\"{0}\", \"{1} {2}\", offsetof({0}, {2}));\r\n", sheetName, "String", col.Name);
+                            sourceCode += string.Format("    engine->RegisterObjectProperty(\"{0}\", \"{1} {2}\", offsetof({0}, {2}));\r\n", sheetName, "string", col.Name);
                             break;
                         case CastleType.Integer:
                             sourceCode += string.Format("    engine->RegisterObjectProperty(\"{0}\", \"{1} {2}\", offsetof({0}, {2}));\r\n", sheetName, "int", col.Name);
