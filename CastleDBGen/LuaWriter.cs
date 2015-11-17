@@ -129,7 +129,7 @@ namespace CastleDBGen
                         if (!jsonOff)
                             fileText += string.Format("{0}self.{1} = value[\"{1}\"]:GetString()\r\n", GetTabString(tabDepth + 0), col.Name);
                         binLoadText += string.Format("{0}self.{1} = source:ReadString()\r\n", GetTabString(tabDepth + 0), col.Name);
-                        binWriteText += string.Format("{0}source:WriteString(self.{1})\r\n", GetTabString(tabDepth + 0), col.Name);
+                        binWriteText += string.Format("{0}dest:WriteString(self.{1})\r\n", GetTabString(tabDepth + 0), col.Name);
                         break;
                     }
                 }

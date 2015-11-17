@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AngelscriptWriter.cs" />
+    <Compile Include="ASBindingWriter.cs" />
     <Compile Include="BaseDBWriter.cs" />
     <Compile Include="CastleDB.cs" />
     <Compile Include="CppWriter.cs" />
