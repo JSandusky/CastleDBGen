@@ -70,10 +70,10 @@ To use CastleDB custom types and their constructors a specific set of rules must
 * The first "constructor" must be the variable type and must not be used in your data.
 * All other constructors will be used to construct that data
 
+The following snippet is valid for a field that is a float and is constructed via a call to random(value,value). The effect of the constructed code would be to call random() to set a float.
 
     enum MyCustom {
         float;
         random(min : float, max : float);
     }
-    
-The above snippet is valid for a field that is a float and is constructed via a call to random(value,value). The effect of the constructed code would be to call random() to set a float.
+
