@@ -119,8 +119,8 @@ namespace CastleDBGen
                         case CastleType.UniqueIdentifier:
                             classStr += string.Format(CPPProperty, "String", column.Name, GetTabstring(tabDepth + 0));
                             cppClassStr += string.Format("{0}{1} = value[\"{1}\"].GetString();\r\n", GetTabstring(tabDepth + 0), column.Name);
-                            binLoadClassStr += string.Format("{0}{1} = source.Readstring();\r\n", GetTabstring(tabDepth + 0), column.Name);
-                            binWriteClassStr += string.Format("{0}dest.Writestring({1});\r\n", GetTabstring(tabDepth + 0), column.Name);
+                            binLoadClassStr += string.Format("{0}{1} = source.ReadString();\r\n", GetTabstring(tabDepth + 0), column.Name);
+                            binWriteClassStr += string.Format("{0}dest.WriteString({1});\r\n", GetTabstring(tabDepth + 0), column.Name);
                             break;
                         case CastleType.Boolean:
                             classStr += string.Format(CPPProperty, "bool", column.Name, GetTabstring(tabDepth + 0));
@@ -144,11 +144,12 @@ namespace CastleDBGen
                                     classStr += string.Format(CPPProperty, string.Format("{0}", customType.Constructors[0].Name), column.Name, GetTabstring(tabDepth + 0));
 
                                 cppClassStr += string.Format("{0}JSONValue& {1}Array = value[\"{1}\"];\r\n", GetTabstring(tabDepth + 0), column.Name);
-                                cppClassStr += string.Format("{0}if ({1}Array.size > 1) {{\r\n{2}int index = {1}Array[0];\r\n", GetTabstring(tabDepth + 0), column.Name, GetTabstring(tabDepth + 1));
+                                cppClassStr += string.Format("{0}if ({1}Array.size > 0) {{\r\n{2}int index = {1}Array[0];\r\n", GetTabstring(tabDepth + 0), column.Name, GetTabstring(tabDepth + 1));
                                 cppClassStr += string.Format("{0}switch (index) {{\r\n", GetTabstring(tabDepth + 1));
                                 for (int i = 1; i < customType.Constructors.Count; ++i)
                                     cppClassStr += string.Format("{0}case {1}: {2} = {3}; break;\r\n", GetTabstring(tabDepth + 1), i, column.Name, customType.Constructors[i].GetCtor(column.Name, 0 /*cpp*/));
                                 cppClassStr += string.Format("{0}}}\r\n", GetTabstring(tabDepth + 1));
+                                cppClassStr += string.Format("{0}}}\r\n", GetTabstring(tabDepth + 0));
                             }
                             break;
                         case CastleType.Dynamic:
@@ -163,8 +164,8 @@ namespace CastleDBGen
                         case CastleType.File:
                             classStr += string.Format(CPPProperty, "String", column.Name, GetTabstring(tabDepth + 0));
                             cppClassStr += string.Format("{0}{1} = value[\"{1}\"].GetString();\r\n", GetTabstring(tabDepth + 0), column.Name);
-                            binLoadClassStr += string.Format("{0}{1} = source.Readstring();\r\n", GetTabstring(tabDepth + 0), column.Name);
-                            binWriteClassStr += string.Format("{0}dest.Writestring({1});\r\n", GetTabstring(tabDepth + 0), column.Name);
+                            binLoadClassStr += string.Format("{0}{1} = source.ReadString();\r\n", GetTabstring(tabDepth + 0), column.Name);
+                            binWriteClassStr += string.Format("{0}dest.WriteString({1});\r\n", GetTabstring(tabDepth + 0), column.Name);
                             break;
                         case CastleType.Flags:
                             classStr += string.Format(CPPProperty, "unsigned", column.Name, GetTabstring(tabDepth + 0));
@@ -224,15 +225,15 @@ namespace CastleDBGen
                             cppClassStr += string.Format("{0}{1}Key = value[\"{1}\"].GetString();\r\n", GetTabstring(tabDepth + 0), column.Name);
 
                             binLoadClassStr += string.Format("{0}{1} = 0x0;\r\n", GetTabstring(tabDepth + 0), column.Name);
-                            binLoadClassStr += string.Format("{0}{1}Key = source.Readstring();\r\n", GetTabstring(tabDepth + 0), column.Name);
-                            binWriteClassStr += string.Format("{0}if ({2} == 0x0)\r\n{1}source.Writestring(\"\");\r\n{0}else\r\n{1}source.Writestring({2}.{3});\r\n", GetTabstring(tabDepth + 0), GetTabstring(tabDepth + 1), column.Name, database.Sheets.FirstOrDefault(s => s.Name.Equals(column.Key)).IDColumn.Name);
+                            binLoadClassStr += string.Format("{0}{1}Key = source.ReadString();\r\n", GetTabstring(tabDepth + 0), column.Name);
+                            binWriteClassStr += string.Format("{0}if ({2} == 0x0)\r\n{1}source.WriteString(\"\");\r\n{0}else\r\n{1}source.WriteString({2}.{3});\r\n", GetTabstring(tabDepth + 0), GetTabstring(tabDepth + 1), column.Name, database.Sheets.FirstOrDefault(s => s.Name.Equals(column.Key)).IDColumn.Name);
 
                             break;
                         case CastleType.Text:
                             classStr += string.Format(CPPProperty, "String", column.Name, GetTabstring(tabDepth + 0));
                             cppClassStr += string.Format("{0}{1} = value[\"{1}\"].GetString();\r\n", GetTabstring(tabDepth + 0), column.Name);
-                            binLoadClassStr += string.Format("{0}{1} = source.Readstring();\r\n", GetTabstring(tabDepth + 0), column.Name);
-                            binWriteClassStr += string.Format("{0}dest.Writestring({1});\r\n", GetTabstring(tabDepth + 0), column.Name);
+                            binLoadClassStr += string.Format("{0}{1} = source.ReadString();\r\n", GetTabstring(tabDepth + 0), column.Name);
+                            binWriteClassStr += string.Format("{0}dest.WriteString({1});\r\n", GetTabstring(tabDepth + 0), column.Name);
                             break;
                         case CastleType.TileLayer:
                             errors.Add(string.Format("Sheet {0}, type {1} unsupported", column.Name, column.TypeID.ToString()));
@@ -334,7 +335,7 @@ namespace CastleDBGen
                 sourceText += string.Format("\r\n{0}void {1}::Load(JSONFile* file) {{\r\n", "", dbName);
                 sourceText += string.Format("{0}JSONValue& sheetsElem = file->GetRoot()[\"sheets\"];\r\n", GetTabstring(tabDepth + 0));
                 sourceText += string.Format("{0}for (unsigned i = 0; i < sheetsElem.Size(); ++i) {{\r\n", GetTabstring(tabDepth + 0));
-                sourceText += string.Format("{0}JSONValue& sheet = sheetsElem[i];\r\n{0}string sheetName = sheet[\"name\"].GetString();\r\n", GetTabstring(tabDepth + 1));
+                sourceText += string.Format("{0}JSONValue& sheet = sheetsElem[i];\r\n{0}String sheetName = sheet[\"name\"].GetString();\r\n", GetTabstring(tabDepth + 1));
                 bool first = true;
                 foreach (CastleSheet sheet in database.Sheets)
                 {

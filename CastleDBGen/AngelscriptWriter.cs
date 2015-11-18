@@ -151,8 +151,8 @@ namespace CastleDBGen
                         case CastleType.UniqueIdentifier:
                             if (!jsonOff)
                                 classStr += string.Format("{0}{1} = value[\"{1}\"].Getstring();\r\n", GetTabstring(tabDepth + 1), col.Name);
-                            loadBinStr += string.Format("{0}{1} = source.Readstring();\r\n", GetTabstring(tabDepth + 1), col.Name);
-                            saveBinStr += string.Format("{0}dest.Writestring({1});\r\n", GetTabstring(tabDepth + 1), col.Name);
+                            loadBinStr += string.Format("{0}{1} = source.ReadString();\r\n", GetTabstring(tabDepth + 1), col.Name);
+                            saveBinStr += string.Format("{0}dest.WriteString({1});\r\n", GetTabstring(tabDepth + 1), col.Name);
                             break;
                         case CastleType.Boolean:
                             if (!jsonOff)
@@ -163,7 +163,7 @@ namespace CastleDBGen
                         case CastleType.Color:
                             if (!jsonOff)
                                 classStr += string.Format("{0}{1}.FromUInt(value[\"{1}\"].GetUInt());\r\n", GetTabstring(tabDepth + 1), col.Name);
-                            loadBinStr += string.Format("{0}{1} = source.Readstring();\r\n", GetTabstring(tabDepth + 1), col.Name);
+                            loadBinStr += string.Format("{0}{1} = source.ReadString();\r\n", GetTabstring(tabDepth + 1), col.Name);
                             saveBinStr += string.Format("{0}dest.WriteColor({1});\r\n", GetTabstring(tabDepth + 1), col.Name);
                             break;
                         case CastleType.Enum:
@@ -179,8 +179,8 @@ namespace CastleDBGen
                         case CastleType.File:
                             if (!jsonOff)
                                 classStr += string.Format("{0}{1} = value[\"{1}\"].Getstring();\r\n", GetTabstring(tabDepth + 1), col.Name);
-                            loadBinStr += string.Format("{0}{1} = source.Readstring();\r\n", GetTabstring(tabDepth + 1), col.Name);
-                            saveBinStr += string.Format("{0}dest.Writestring({1});\r\n", GetTabstring(tabDepth + 1), col.Name);
+                            loadBinStr += string.Format("{0}{1} = source.ReadString();\r\n", GetTabstring(tabDepth + 1), col.Name);
+                            saveBinStr += string.Format("{0}dest.WriteString({1});\r\n", GetTabstring(tabDepth + 1), col.Name);
                             break;
                         case CastleType.Flags:
                             if (!jsonOff)
@@ -223,13 +223,13 @@ namespace CastleDBGen
                         case CastleType.Ref:
                             if (!jsonOff)
                                 classStr += string.Format("{0}{1}Key = value[\"{1}\"].Getstring();\r\n", GetTabstring(tabDepth + 1), col.Name);
-                            loadBinStr += string.Format("{0}{1}Key = source.Readstring();\r\n", GetTabstring(tabDepth + 1), col.Name);
-                            saveBinStr += string.Format("{0}if ({2} is null)\r\n{1}source.Writestring(\"\");\r\n{0}else\r\n{1}source.Writestring({2}.{3});\r\n", GetTabstring(tabDepth + 1), GetTabstring(tabDepth + 2), col.Name, database.Sheets.FirstOrDefault(s => s.Name.Equals(col.Key)).IDColumn.Name);
+                            loadBinStr += string.Format("{0}{1}Key = source.ReadString();\r\n", GetTabstring(tabDepth + 1), col.Name);
+                            saveBinStr += string.Format("{0}if ({2} is null)\r\n{1}source.WriteString(\"\");\r\n{0}else\r\n{1}source.WriteString({2}.{3});\r\n", GetTabstring(tabDepth + 1), GetTabstring(tabDepth + 2), col.Name, database.Sheets.FirstOrDefault(s => s.Name.Equals(col.Key)).IDColumn.Name);
                             break;
                         case CastleType.Text:
                             if (!jsonOff)
                                 classStr += string.Format("{0}{1} = value[\"{1}\"].Getstring();\r\n", GetTabstring(tabDepth + 1), col.Name);
-                            loadBinStr += string.Format("{0}{1} = source.Readstring();\r\n", GetTabstring(tabDepth + 1), col.Name);
+                            loadBinStr += string.Format("{0}{1} = source.ReadString();\r\n", GetTabstring(tabDepth + 1), col.Name);
                             break;
                     }
                 }
@@ -290,7 +290,7 @@ namespace CastleDBGen
                 fileText += string.Format("\r\n{0}void Load(JSONFile@ file) {{\r\n", GetTabstring(tabDepth + 0));
                 fileText += string.Format("{0}JSONValue sheetsElem = file.GetRoot()[\"sheets\"];\r\n", GetTabstring(tabDepth + 1));
                 fileText += string.Format("{0}for (uint i = 0; i < sheetsElem.size; ++i) {{\r\n", GetTabstring(tabDepth + 1));
-                fileText += string.Format("{0}JSONValue sheet = sheetsElem[i];\r\n{0}string sheetName = sheet[\"name\"].Getstring();\r\n", GetTabstring(tabDepth + 2));
+                fileText += string.Format("{0}JSONValue sheet = sheetsElem[i];\r\n{0}String sheetName = sheet[\"name\"].Getstring();\r\n", GetTabstring(tabDepth + 2));
                 bool first = true;
                 foreach (CastleSheet sheet in database.Sheets)
                 {
