@@ -70,6 +70,7 @@ To use CastleDB custom types and their constructors a specific set of rules must
 * The first "constructor" must be the variable type and must not be used in your data.
 * All other constructors will be used to construct that data
 
+
     enum MyCustom {
         float;
         random(min : float, max : float);
