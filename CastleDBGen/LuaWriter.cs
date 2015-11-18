@@ -51,7 +51,7 @@ namespace CastleDBGen
                     {
                     case CastleType.UniqueIdentifier:
                         if (!jsonOff)
-                            fileText += string.Format("{0}self.{1} = value[\"{1}\"]:Getstring()\r\n", GetTabstring(tabDepth + 0), col.Name);
+                            fileText += string.Format("{0}self.{1} = value[\"{1}\"]:GetString()\r\n", GetTabstring(tabDepth + 0), col.Name);
                         binLoadText += string.Format("{0}self.{1} = source:Readstring()\r\n", GetTabstring(tabDepth + 0), col.Name);
                         binWriteText += string.Format("{0}dest:Writestring(self.{1});\r\n", GetTabstring(tabDepth + 0), col.Name);
                         break;
@@ -75,7 +75,7 @@ namespace CastleDBGen
                         break;
                     case CastleType.File:
                         if (!jsonOff)
-                            fileText += string.Format("{0}self.{1} = value[\"{1}\"]:Getstring()\r\n", GetTabstring(tabDepth + 0), col.Name);
+                            fileText += string.Format("{0}self.{1} = value[\"{1}\"]:GetString()\r\n", GetTabstring(tabDepth + 0), col.Name);
                         binLoadText += string.Format("{0}self.{1} = source:Readstring()\r\n", GetTabstring(tabDepth + 0), col.Name);
                         binWriteText += string.Format("{0}dest:Writestring(self.{1});\r\n", GetTabstring(tabDepth + 0), col.Name);
                         break;
@@ -121,13 +121,13 @@ namespace CastleDBGen
                         break;
                     case CastleType.Ref:
                         if (!jsonOff)
-                            fileText += string.Format("{0}self.{1}Key = value[\"{1}\"]:Getstring()\r\n", GetTabstring(tabDepth + 0), col.Name);
+                            fileText += string.Format("{0}self.{1}Key = value[\"{1}\"]:GetString()\r\n", GetTabstring(tabDepth + 0), col.Name);
                         binLoadText += string.Format("{0}self.{1}Key = source:Readstring()\r\n", GetTabstring(tabDepth + 0), col.Name);
                         binWriteText += string.Format("{0}dest:Writestring({1}.{2})\r\n", GetTabstring(tabDepth + 0), col.Name, database.Sheets.FirstOrDefault(s => s.Name.Equals(col.Key)).IDColumn.Name);
                         break;
                     case CastleType.Text:
                         if (!jsonOff)
-                            fileText += string.Format("{0}self.{1} = value[\"{1}\"]:Getstring()\r\n", GetTabstring(tabDepth + 0), col.Name);
+                            fileText += string.Format("{0}self.{1} = value[\"{1}\"]:GetString()\r\n", GetTabstring(tabDepth + 0), col.Name);
                         binLoadText += string.Format("{0}self.{1} = source:Readstring()\r\n", GetTabstring(tabDepth + 0), col.Name);
                         binWriteText += string.Format("{0}dest:Writestring(self.{1})\r\n", GetTabstring(tabDepth + 0), col.Name);
                         break;
@@ -163,7 +163,7 @@ namespace CastleDBGen
 "    -- load the data from file\r\n" +
 "    for k = 0, file:GetRoot():Size() do\r\n" +
 "        local sheet = file:GetRoot()[k]\r\n" +
-"        local sheetName = sheet:Get(\"name\"):Getstring()\r\n";
+"        local sheetName = sheet:Get(\"name\"):GetString()\r\n";
 
             foreach (CastleSheet sheet in database.Sheets)
             {

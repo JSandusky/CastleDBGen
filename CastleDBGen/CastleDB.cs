@@ -81,6 +81,84 @@ namespace CastleDBGen
         public string Name;
         public List<string> ArgNames = new List<string>();
         public List<string> ArgTypes = new List<string>();
+
+        public string GetCtor(string typeName, int langCode)
+        {
+            StringBuilder ret = new StringBuilder();
+
+            ret.Append(Name.Replace("_","::"));
+            if (ArgNames.Count > 0)
+            {
+                ret.Append("(");
+
+                for (int i = 0; i < ArgNames.Count; ++i)
+                {
+                    if (i > 0)
+                        ret.Append(", ");
+                    string typeStr = ArgTypes[i];
+                    int typeID = 0;
+                    if (typeStr.Contains(":"))
+                    {
+                        string[] words = typeStr.Split(CastleColumn.STRSPLIT, StringSplitOptions.RemoveEmptyEntries);
+                        typeID = int.Parse(words[0]);
+                        typeStr = words[0];
+                    }
+                    else
+                        typeID = int.Parse(typeStr);
+
+                    switch (langCode)
+                    { 
+                        case 0: //CPP
+                        case 1: //Angelscript
+                        switch ((CastleType)typeID)
+                        {
+                            case CastleType.Boolean:
+                                ret.AppendFormat("{0}Array[{1}].GetBool()", typeName, i + 1);
+                                break;
+                            case CastleType.Integer:
+                                ret.AppendFormat("{0}Array[{1}].GetInt()", typeName, i + 1);
+                                break;
+                            case CastleType.Float:
+                                ret.AppendFormat("{0}Array[{1}].GetFloat()", typeName, i + 1);
+                                break;
+                            case CastleType.Text:
+                                ret.AppendFormat("{0}Array[{1}].GetString()", typeName, i + 1);
+                                break;
+                            case CastleType.Custom:
+                                // Custom type constructors need to take JSONValue parameters and process themselves
+                                ret.AppendFormat("{0}Array[{1}]", typeName, i + 1);
+                                break;
+                        }
+                        break;
+                        case 3: //Lua
+                        switch ((CastleType)typeID)
+                        {
+                            case CastleType.Boolean:
+                                ret.AppendFormat("{0}Array[{1}]:GetBool()", typeName, i + 1);
+                                break;
+                            case CastleType.Integer:
+                                ret.AppendFormat("{0}Array[{1}]:GetInt()", typeName, i + 1);
+                                break;
+                            case CastleType.Float:
+                                ret.AppendFormat("{0}Array[{1}]:GetFloat()", typeName, i + 1);
+                                break;
+                            case CastleType.Text:
+                                ret.AppendFormat("{0}Array[{1}]:GetString()", typeName, i + 1);
+                                break;
+                            case CastleType.Custom:
+                                // Custom type constructors need to take JSONValue parameters and process themselves
+                                ret.AppendFormat("{0}Array[{1}]", typeName, i + 1);
+                                break;
+                        }
+                        break;
+                    }
+                }
+
+                ret.Append(")");
+            }
+
+            return ret.ToString();
+        }
     }
 
     public class CastleCustom

@@ -80,7 +80,7 @@ namespace CastleDBGen
                     switch (column.TypeID)
                     {
                     case CastleType.UniqueIdentifier:
-                        classStr += string.Format(ASProperty, "string", column.Name, GetTabstring(tabDepth + 0));
+                        classStr += string.Format(ASProperty, "String", column.Name, GetTabstring(tabDepth + 0));
                         break;
                     case CastleType.Boolean:
                         classStr += string.Format(ASProperty, "bool", column.Name, GetTabstring(tabDepth + 0));
@@ -96,7 +96,7 @@ namespace CastleDBGen
                         classStr += string.Format(ASProperty, "int", column.Name, GetTabstring(tabDepth + 0));
                         break;
                     case CastleType.File:
-                        classStr += string.Format(ASProperty, "string", column.Name, GetTabstring(tabDepth + 0));
+                        classStr += string.Format(ASProperty, "String", column.Name, GetTabstring(tabDepth + 0));
                         break;
                     case CastleType.Flags:
                         classStr += string.Format(ASProperty, "uint", column.Name, GetTabstring(tabDepth + 0));
@@ -118,7 +118,7 @@ namespace CastleDBGen
                         classStr += string.Format("{0}private string {1}Key;\r\n", GetTabstring(tabDepth + 0), column.Name);
                         break;
                     case CastleType.Text:
-                        classStr += string.Format(ASProperty, "string", column.Name, GetTabstring(tabDepth + 0));
+                        classStr += string.Format(ASProperty, "String", column.Name, GetTabstring(tabDepth + 0));
                         break;
                     case CastleType.TileLayer:
                         errors.Add(string.Format("Sheet {0}, type {1} unsupported", column.Name, column.TypeID.ToString()));

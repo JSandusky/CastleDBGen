@@ -103,7 +103,7 @@ namespace CastleDBGen
                         case CastleType.UniqueIdentifier:
                         case CastleType.File:
                         case CastleType.Text:
-                            sourceCode += string.Format("    engine->RegisterObjectProperty(\"{0}\", \"{1} {2}\", offsetof({0}, {2}));\r\n", sheetName, "string", col.Name);
+                            sourceCode += string.Format("    engine->RegisterObjectProperty(\"{0}\", \"{1} {2}\", offsetof({0}, {2}));\r\n", sheetName, "String", col.Name);
                             break;
                         case CastleType.Integer:
                             sourceCode += string.Format("    engine->RegisterObjectProperty(\"{0}\", \"{1} {2}\", offsetof({0}, {2}));\r\n", sheetName, "int", col.Name);
