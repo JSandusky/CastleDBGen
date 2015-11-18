@@ -36,11 +36,23 @@ Process CastleDB database JSON files and generates source code for both the type
     -ns: namespace, follow with namespace
         default: none
         C#: REQUIRED
-    -lang: language: cpp, as, cs, lua
+    -lang: <language>
         default: cpp
-    -hd: header path string, C++ only
+        option: as
+        option: cs
+        option: lua
+        option: asbind (generate AS bindings)
+    -hd: <header path string>, C++ only
     -db: name for database class
         default: GameDatabase
+    -bin: <setting>, type of binary read/write suppprt
+        default: none
+        option: on
+        option: only, only generates binary read/write, no JSON
+    -inherit: <classname>
+        default: none
+        Required as "RefCounted" for AS binding generation
+        Note: in C++ inheriting RefCounted will use SharedPtr for all things
 
 **Examples**
 
@@ -50,3 +62,17 @@ Process CastleDB database JSON files and generates source code for both the type
 
 ## Dependencies
 Newtonsoft.JSON via Nuget
+
+## Using custom types
+
+To use CastleDB custom types and their constructors a specific set of rules must be used to make the generator happy. These necessities were irrelevant to Haxe. Eventually a CastleDB fork will account for the necessity.
+
+* The first "constructor" must be the variable type and must not be used in your data.
+* All other constructors will be used to construct that data
+
+    enum MyCustom {
+        float;
+        random(min : float, max : float);
+    }
+    
+The above snippet is valid for a field that is a float and is constructed via a call to random(value,value). The effect of the constructed code would be to call random() to set a float.
