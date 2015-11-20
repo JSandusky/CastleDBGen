@@ -102,6 +102,7 @@ namespace CastleDBGen
                     {
                         case CastleType.UniqueIdentifier:
                         case CastleType.File:
+                        case CastleType.Image:
                         case CastleType.Text:
                             sourceCode += string.Format("    engine->RegisterObjectProperty(\"{0}\", \"{1} {2}\", offsetof({0}, {2}));\r\n", sheetName, "String", col.Name);
                             break;
@@ -128,6 +129,20 @@ namespace CastleDBGen
                             break;
                         case CastleType.List:
                             sourceCode += string.Format("    engine->RegisterObjectMethod(\"{0}\", \"Array<{1}@+>@ get_{2}()\", asFUNCTION({0}Get{2}), asCALL_CDECL_OBJLAST);\r\n", sheetName, col.Key, col.Name);
+                            break;
+                        case CastleType.Dynamic:
+                            sourceCode += string.Format("    engine->RegisterObjectProperty(\"{0}\", \"{1} {2}\", offsetof({0}, {2}));\r\n", sheetName, "JSONValue", col.Name);
+                            break;
+                        case CastleType.TileLayer:
+                            sourceCode += string.Format("    engine->RegisterObjectProperty(\"{0}\", \"{1} {2}\", offsetof({0}, {2}));\r\n", sheetName, "CastleTileLayer@+", col.Name);
+                            break;
+                        case CastleType.Custom:
+                            CastleCustom custom = database.CustomTypes.FirstOrDefault(c => c.Name.Equals(col.Key));
+                            if (custom != null)
+                            {
+                                if (!custom.Constructors[0].returnType.Equals("void"))
+                                    sourceCode += string.Format("    engine->RegisterObjectProperty(\"{0}\", \"{1} {2}\", offsetof({0}, {2}));\r\n", sheetName, custom.Constructors[0].returnType.Replace("*", "@+"), col.Name);
+                            }
                             break;
                     }
                 }

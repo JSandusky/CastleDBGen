@@ -7,7 +7,40 @@ using Newtonsoft.Json.Linq;
 
 namespace CastleDBGen
 {
-    // Utility class for sorting CastleSheets based on their references to their other sheets
+    public static class CastleTypeConverter
+    {
+        public static object ConvertType(CastleType type, object value)
+        {
+            switch (type)
+            {
+            case CastleType.UniqueIdentifier:
+            case CastleType.Text:
+                return value.ToString();
+            case CastleType.Integer:
+                return int.Parse(value.ToString());
+            case CastleType.Float:
+                return float.Parse(value.ToString());
+            case CastleType.Boolean:
+                return bool.Parse(value.ToString());
+            case CastleType.Flags:
+                return uint.Parse(value.ToString());
+            case CastleType.Enum:
+                return int.Parse(value.ToString());
+            case CastleType.Image:
+                return value.ToString();
+            case CastleType.Color:
+                return uint.Parse(value.ToString());
+            case CastleType.Ref:
+                CastleRef refObj = value as CastleRef;
+                if (refObj == null)
+                    return null;
+                return refObj.Referencedstring;
+            }
+            return null;
+        }
+    }
+
+    // Utility 
     public sealed class DependencySort : Comparer<CastleSheet>
     {
         public override int Compare(CastleSheet x, CastleSheet y)
@@ -59,10 +92,89 @@ namespace CastleDBGen
         Dynamic      //16
     }
 
+    public class Opts
+    {
+        public string name { get; set; }
+        public int priority { get; set; }
+        public string borderIn { get; set; }
+        public string borderOut { get; set; }
+        public string borderMode { get; set; }
+        public int? value { get; set; }
+    }
+
+    public class Tile
+    {
+        public int x { get; set; }
+        public int y { get; set; }
+        public int w { get; set; }
+        public int h { get; set; }
+        public string t { get; set; }
+        public Opts opts { get; set; }
+    }
+
+    public class TileSet
+    {
+        public int stride { get; set; }
+        public List<Tile> sets { get; set; }
+        public List< Dictionary<string, object> > props { get; set; }
+    }
+
+    public class CastleTileSheet
+    {
+        public string Name { get; set; }
+        public List<string> TypeNames = new List<string>();
+        public List<TileSet> TileSets = new List<TileSet>();
+
+        public CastleTileSheet(JObject jobject)
+        {
+
+        }
+
+        public Type CoalescePropertyType(string name)
+        {
+            Type curType = null;
+            foreach (TileSet set in TileSets)
+            {
+                foreach (Dictionary<string,object> dict in set.props)
+                {
+                    foreach (object value in dict.Values)
+                    {
+                        if (curType == null)
+                            curType = value.GetType();
+                        else if (curType != value.GetType())
+                            return typeof(string);
+                    }
+                }
+            }
+            return curType == null ? typeof(string) : curType;
+        }
+    }
+
     public class CastleRef
     {
         public CastleLine ReferenceLine;
         public string Referencedstring;
+    }
+
+    public class CastleImage
+    {
+        public string MD5 { get; set; }
+        public string Path { get; set; }
+    }
+
+    public class CastleTilePos
+    {
+        public CastleTilePos()
+        {
+            Width = Height = 1;
+        }
+
+        public string File { get; set; }
+        public int Size { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
     }
 
     public class CastleCustomInst
@@ -79,10 +191,11 @@ namespace CastleDBGen
     public class CastleCustomCtor
     {
         public string Name;
+        public string returnType = "void";
         public List<string> ArgNames = new List<string>();
         public List<string> ArgTypes = new List<string>();
 
-        public string GetCtor(string typeName, int langCode)
+        public string GetCtor(string typeName, int langCode, CastleDB database)
         {
             StringBuilder ret = new StringBuilder();
 
@@ -194,6 +307,8 @@ namespace CastleDBGen
         public string Key = "";
         public CastleType TypeID = CastleType.UniqueIdentifier;
         public List<string> Enumerations = new List<string>();
+        public bool Optional = true;
+        public bool Display = true;
 
         public CastleColumn Clone()
         {
@@ -239,11 +354,20 @@ namespace CastleDBGen
                 return "";
         }
 
-        public bool HasReferences()
+        public bool HasReferences(CastleDB database)
         {
             foreach (CastleColumn col in Columns)
+            {
                 if (col.TypeID == CastleType.Ref)
                     return true;
+                else if (col.TypeID == CastleType.List)
+                {
+                    string searchSheet = string.Format("{0}@{1}", Name, col.Name);
+                    CastleSheet dbSheet = database.Sheets.FirstOrDefault(s => s.Name.Equals(searchSheet));
+                    if (dbSheet != null && dbSheet.HasReferences(database))
+                        return true;
+                }
+            }
             return false;
         }
     }
@@ -381,8 +505,46 @@ namespace CastleDBGen
                         else
                             throw new Exception("Unable to find custom type: " + col.Key);
                     }
+                    else if (col.TypeID == CastleType.Image)
+                    {
+                        string strValue = property.Value.ToString();
+                        if (strValue.Contains(":"))
+                        {
+                            string[] words = strValue.Split(':');
+                            newLine.Values.Add(new CastleImage { MD5 = words[0], Path = words[1] });
+                        }
+                        else
+                            newLine.Values.Add(new CastleImage { MD5 = strValue, Path = "" });
+                    }
+                    else if (col.TypeID == CastleType.TilePos)
+                    {
+                        JObject tileObj = property.Value as JObject;
+                        if (tileObj != null)
+                        {
+                            newLine.Values.Add(new CastleTilePos { 
+                                File = tileObj.Property("file").Value.ToString(), 
+                                Size = int.Parse(tileObj.Property("size").Value.ToString()),
+                                X = int.Parse(tileObj.Property("x").Value.ToString()),
+                                Y = int.Parse(tileObj.Property("y").Value.ToString()),
+                                Width = tileObj.Property("width") != null ? int.Parse(tileObj.Property("width").Value.ToString()) : 0,
+                                Height = tileObj.Property("height") != null ? int.Parse(tileObj.Property("height").Value.ToString()) : 0
+                            });
+                        }
+                    }
+                    else if (col.TypeID == CastleType.Layer)
+                    {
+
+                    }
+                    else if (col.TypeID == CastleType.TileLayer)
+                    {
+
+                    }
+                    else if (col.TypeID == CastleType.Dynamic)
+                    {
+                        // Just straight add the JToken to it
+                        newLine.Values.Add(property.Value);
+                    }
                     else if (col.TypeID == CastleType.Ref)
-                        // Push a string for now
                         newLine.Values.Add(property.Value.ToString());
                     else
                         newLine.Values.Add(property.Value.ToString());
@@ -423,6 +585,109 @@ namespace CastleDBGen
                 }
                 if (customType.Constructors.Count > 0)
                     CustomTypes.Add(customType);
+            }
+        }
+
+        public void Save(string fileName)
+        {
+            Newtonsoft.Json.Linq.JObject root = new JObject();
+            JArray sheetsObject = new JArray();
+            root.Add(new JProperty("sheets", sheetsObject));
+            foreach (CastleSheet sheet in Sheets)
+                SaveSheet(sheetsObject, sheet);
+
+            JArray customObj = new JArray();
+            root.Add(new JProperty("customTypes", customObj));
+            foreach (CastleCustom custom in CustomTypes)
+                SaveCustomTypes(customObj, custom);
+
+            root.WriteTo(new Newtonsoft.Json.JsonTextWriter(new System.IO.StreamWriter(fileName)));
+        }
+
+        void SaveSheet(JArray sheetArray, CastleSheet sheet)
+        {
+            JObject sheetObject = new JObject();
+            sheetArray.Add(sheetObject);
+
+            sheetObject.Add(new JProperty("name", sheet.Name));
+            JArray columnsArray = new JArray();
+            sheetObject.Add(new JProperty("columns", columnsArray));
+            foreach (CastleColumn col in sheet.Columns)
+            {
+                JObject column = new JObject();
+                if (col.Key.Length > 0)
+                    column.Add(new JProperty("typeStr", string.Format("{0}:{1}", (int)col.TypeID, col.Key)));
+                else
+                    column.Add(new JProperty("typeStr", ((int)col.TypeID).ToString()));
+                column.Add(new JProperty("name", col.Name));
+                if (col.Optional)
+                    column.Add(new JProperty("opt", true));
+                columnsArray.Add(column);
+            }
+
+            JArray linesArray = new JArray();
+            SaveSheet(linesArray, sheet);
+            sheetObject.Add(new JProperty("lines", linesArray));
+        }
+
+        void SaveCustomTypes(JArray customArray, CastleCustom customType)
+        {
+            JObject typeObj = new JObject();
+            typeObj.Add(new JProperty("name", customType.Name));
+            JArray casesArray = new JArray();
+            foreach (CastleCustomCtor ctor in customType.Constructors)
+            {
+                JObject ctorObj = new JObject();
+                ctorObj.Add(new JProperty("name", ctor.Name));
+                JArray argsArray = new JArray();
+                ctorObj.Add(new JProperty("args", argsArray));
+                for (int i = 0; i < ctor.ArgNames.Count; ++i)
+                {
+                    JObject argObject = new JObject();
+                    argObject.Add(new JProperty("name", ctor.ArgNames[i]));
+                    argObject.Add(new JProperty("typeStr", ctor.ArgTypes[i]));
+                    argsArray.Add(argObject);
+                }
+                casesArray.Add(ctorObj);
+            }
+            typeObj.Add(new JProperty("cases", casesArray));
+        }
+
+        void SaveSheetLines(JArray holderArray, CastleSheet sheet)
+        {
+            foreach (CastleLine line in sheet.Lines)
+                SaveLine(holderArray, line, sheet);
+        }
+
+        void SaveLine(JArray linesArray, CastleLine line, CastleSheet sheet)
+        {
+            JObject lineObject = new JObject();
+            linesArray.Add(lineObject);
+
+            for (int i = 0; i < sheet.Columns.Count; ++i)
+            {
+                switch (sheet.Columns[i].TypeID)
+                {
+                case CastleType.List:
+                    JArray subList = new JArray();
+                    CastleSheet subSheet = line.Values[i] as CastleSheet;
+                    if (subSheet != null)
+                        SaveSheetLines(subList, subSheet);
+                    lineObject.Add(new JProperty(sheet.Columns[i].Name, subList));
+                    break;
+                case CastleType.Custom:
+                    CastleCustomInst ci = line.Values[i] as CastleCustomInst;
+                    JArray ctorArray = new JArray();
+                    if (ci == null)
+                    {
+                        
+                    }
+                    lineObject.Add(new JProperty(sheet.Columns[i].Name, ctorArray));
+                    break;
+                default:
+                    lineObject.Add(new JProperty(sheet.Columns[i].Name, CastleTypeConverter.ConvertType(sheet.Columns[i].TypeID, line.Values[i])));
+                    break;
+                }
             }
         }
     }

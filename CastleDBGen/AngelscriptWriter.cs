@@ -38,6 +38,19 @@ namespace CastleDBGen
             if (switches.ContainsKey("inherit"))
                 inherit = switches["inherit"];
 
+            bool hasTilePos = false;
+            bool hasLayers = false;
+            foreach (CastleSheet sheet in database.Sheets)
+            {
+                foreach (CastleColumn column in sheet.Columns)
+                {
+                    if (column.TypeID == CastleType.TileLayer || column.TypeID == CastleType.Layer)
+                        hasLayers = true;
+                    else if (column.TypeID == CastleType.TilePos)
+                        hasTilePos = true;
+                }
+            }
+
             // Angelscript namespace need to go externally
             // Scan for enumerations and flags
             foreach (CastleSheet sheet in database.Sheets)
@@ -70,6 +83,11 @@ namespace CastleDBGen
                 fileText += string.Format("\r\nnamespace {0} {{\r\n", switches["ns"]);
             }
 
+            if (hasTilePos)
+                fileText += asCastleTileCode;
+            if (hasLayers)
+                fileText += asLayerClasses;
+
             foreach (CastleSheet sheet in database.Sheets)
             {
                 string sheetName = sheet.Name.Replace('@', '_');
@@ -89,8 +107,15 @@ namespace CastleDBGen
                         classStr += string.Format(ASProperty, "Color", column.Name, GetTabstring(tabDepth + 0));
                         break;
                     case CastleType.Custom:
+                        CastleCustom custom = database.CustomTypes.FirstOrDefault(c => c.Name.Equals(column.Key));
+                        if (custom != null)
+                        {
+                            if (!custom.Constructors[0].returnType.Equals("void"))
+                                classStr += string.Format(ASProperty, custom.Constructors[0].returnType, column.Name, GetTabstring(tabDepth + 0));
+                        }
+                        break;
                     case CastleType.Dynamic:
-                        errors.Add(string.Format("Sheet {0}, type {1} unsupported", column.Name, column.TypeID.ToString()));
+                        classStr += string.Format(ASProperty, "JSONValue", column.Name, GetTabstring(tabDepth + 0));
                         break;
                     case CastleType.Enum:
                         classStr += string.Format(ASProperty, "int", column.Name, GetTabstring(tabDepth + 0));
@@ -102,13 +127,13 @@ namespace CastleDBGen
                         classStr += string.Format(ASProperty, "uint", column.Name, GetTabstring(tabDepth + 0));
                         break;
                     case CastleType.Image:
-                        errors.Add(string.Format("Sheet {0}, type {1} unsupported", column.Name, column.TypeID.ToString()));
+                        classStr += string.Format(ASProperty, "String", column.Name, GetTabstring(tabDepth + 0));
                         break;
                     case CastleType.Integer:
                         classStr += string.Format(ASProperty, "int", column.Name, GetTabstring(tabDepth + 0));
                         break;
                     case CastleType.Layer:
-                        errors.Add(string.Format("Sheet {0}, type {1} unsupported", column.Name, column.TypeID.ToString()));
+                        classStr += string.Format(ASProperty, "CastleDataLayer@", column.Name, GetTabstring(tabDepth + 0));
                         break;
                     case CastleType.List:
                         classStr += string.Format("{0}Array<{1}@> {2};\r\n", GetTabstring(tabDepth + 0), string.Format("{0}_{1}", sheet.Name, column.Name), column.Name);
@@ -121,10 +146,10 @@ namespace CastleDBGen
                         classStr += string.Format(ASProperty, "String", column.Name, GetTabstring(tabDepth + 0));
                         break;
                     case CastleType.TileLayer:
-                        errors.Add(string.Format("Sheet {0}, type {1} unsupported", column.Name, column.TypeID.ToString()));
+                        classStr += string.Format(ASProperty, "CastleTileLayer@", column.Name, GetTabstring(tabDepth + 0));
                         break;
                     case CastleType.TilePos:
-                        errors.Add(string.Format("Sheet {0}, type {1} unsupported", column.Name, column.TypeID.ToString()));
+                        classStr += string.Format(ASProperty, "CastleTile", column.Name, GetTabstring(tabDepth + 0));
                         break;
                     }
                 }
@@ -150,7 +175,7 @@ namespace CastleDBGen
                     {
                         case CastleType.UniqueIdentifier:
                             if (!jsonOff)
-                                classStr += string.Format("{0}{1} = value[\"{1}\"].Getstring();\r\n", GetTabstring(tabDepth + 1), col.Name);
+                                classStr += string.Format("{0}{1} = value[\"{1}\"].GetString();\r\n", GetTabstring(tabDepth + 1), col.Name);
                             loadBinStr += string.Format("{0}{1} = source.ReadString();\r\n", GetTabstring(tabDepth + 1), col.Name);
                             saveBinStr += string.Format("{0}dest.WriteString({1});\r\n", GetTabstring(tabDepth + 1), col.Name);
                             break;
@@ -175,10 +200,14 @@ namespace CastleDBGen
                             break;
 
                         case CastleType.Image:
+                            if (!jsonOff)
+                                classStr += string.Format("{0}String {1}Str = value[\"{1}\"].GetString();\r\n{0}if ({1}Str.length > 0)\r\n{2}{1} = {1}Str.Substring({1}Str.IndexOf(':'));\r\n", GetTabstring(tabDepth + 1), col.Name, GetTabstring(tabDepth + 2));
+                            loadBinStr += string.Format("{0}{1} = source.ReadString();\r\n", GetTabstring(tabDepth + 1), col.Name);
+                            saveBinStr += string.Format("{0}dest.WriteString({1});\r\n", GetTabstring(tabDepth + 1), col.Name);
                             break;
                         case CastleType.File:
                             if (!jsonOff)
-                                classStr += string.Format("{0}{1} = value[\"{1}\"].Getstring();\r\n", GetTabstring(tabDepth + 1), col.Name);
+                                classStr += string.Format("{0}{1} = value[\"{1}\"].GetString();\r\n", GetTabstring(tabDepth + 1), col.Name);
                             loadBinStr += string.Format("{0}{1} = source.ReadString();\r\n", GetTabstring(tabDepth + 1), col.Name);
                             saveBinStr += string.Format("{0}dest.WriteString({1});\r\n", GetTabstring(tabDepth + 1), col.Name);
                             break;
@@ -222,14 +251,48 @@ namespace CastleDBGen
                             break;
                         case CastleType.Ref:
                             if (!jsonOff)
-                                classStr += string.Format("{0}{1}Key = value[\"{1}\"].Getstring();\r\n", GetTabstring(tabDepth + 1), col.Name);
+                                classStr += string.Format("{0}{1}Key = value[\"{1}\"].GetString();\r\n", GetTabstring(tabDepth + 1), col.Name);
                             loadBinStr += string.Format("{0}{1}Key = source.ReadString();\r\n", GetTabstring(tabDepth + 1), col.Name);
                             saveBinStr += string.Format("{0}if ({2} is null)\r\n{1}source.WriteString(\"\");\r\n{0}else\r\n{1}source.WriteString({2}.{3});\r\n", GetTabstring(tabDepth + 1), GetTabstring(tabDepth + 2), col.Name, database.Sheets.FirstOrDefault(s => s.Name.Equals(col.Key)).IDColumn.Name);
                             break;
                         case CastleType.Text:
                             if (!jsonOff)
-                                classStr += string.Format("{0}{1} = value[\"{1}\"].Getstring();\r\n", GetTabstring(tabDepth + 1), col.Name);
+                                classStr += string.Format("{0}{1} = value[\"{1}\"].GetString();\r\n", GetTabstring(tabDepth + 1), col.Name);
                             loadBinStr += string.Format("{0}{1} = source.ReadString();\r\n", GetTabstring(tabDepth + 1), col.Name);
+                            break;
+                        case CastleType.Custom:
+                            CastleCustom customType = database.CustomTypes.FirstOrDefault(t => t.Name.Equals(col.Key));
+                            if (customType != null && !jsonOff)
+                            {
+                                classStr += string.Format("{0}JSONValue& {1}Array = value[\"{1}\"];\r\n", GetTabstring(tabDepth + 1), col.Name);
+                                classStr += string.Format("{0}if ({1}Array.size > 0) {{\r\n{2}int index = {1}Array[0];\r\n", GetTabstring(tabDepth + 1), col.Name, GetTabstring(tabDepth + 2));
+                                classStr += string.Format("{0}switch (index) {{\r\n", GetTabstring(tabDepth + 2));
+                                for (int i = 1; i < customType.Constructors.Count; ++i)
+                                {
+                                    if (customType.Constructors[0].returnType.Equals("void"))
+                                        classStr += string.Format("{0}case {1}: {3}; break;\r\n", GetTabstring(tabDepth + 2), i, col.Name, customType.Constructors[i].GetCtor(col.Name, 0 /*cpp*/, database));
+                                    else
+                                        classStr += string.Format("{0}case {1}: {2} = {3}; break;\r\n", GetTabstring(tabDepth + 2), i, col.Name, customType.Constructors[i].GetCtor(col.Name, 0 /*cpp*/, database));
+                                }
+                                classStr += string.Format("{0}}}\r\n", GetTabstring(tabDepth + 2));
+                                classStr += string.Format("{0}}}\r\n", GetTabstring(tabDepth + 1));
+                            }
+                            break;
+                        case CastleType.Dynamic:
+                            if (!jsonOff)
+                                classStr += string.Format("{0}{1} = value[\"{1}\"];\r\n", GetTabstring(tabDepth + 1), col.Name);
+                            break;
+                        case CastleType.TileLayer:
+                            if (!jsonOff)
+                                classStr += string.Format("{0}if (value[\"{1}\"].isNull == false)\r\n{3}{1} = {2}(value[\"{1}\");\r\n", GetTabstring(tabDepth + 1), col.Name, "CastleTileLayer", GetTabstring(tabDepth + 2));
+                            break;
+                        case CastleType.Layer:
+                            if (!jsonOff)
+                                classStr += string.Format("{0}if (value[\"{1}\"].isNull == false)\r\n{3}{1} = {2}(value[\"{1}\");\r\n", GetTabstring(tabDepth + 1), col.Name, "CastleDataLayer", GetTabstring(tabDepth + 2));
+                            break;
+                        case CastleType.TilePos:
+                            if (!jsonOff)
+                                classStr += string.Format("{0}if (value[\"{1}\"].isNull == false)\r\n{3}{1}.Load(value[\"{1}\"]);\r\n", GetTabstring(tabDepth + 1), col.Name, "CastleTile", GetTabstring(tabDepth + 2));
                             break;
                     }
                 }
@@ -273,6 +336,7 @@ namespace CastleDBGen
                 if (sheet.Name.Contains("@"))
                     continue;
                 fileText += string.Format("{0}Array<{1}@> {1}List;\r\n", GetTabstring(tabDepth + 0), sheet.Name.Replace("@","_"));
+                fileText += string.Format("{0}JSONValue {1}Properties;\r\n", GetTabstring(tabDepth + 0), sheet.Name.Replace("@", "_"));
             }
 
             fileText += string.Format("\r\n{0}~{1}() {{\r\n", GetTabstring(tabDepth + 0), dbName);
@@ -290,7 +354,7 @@ namespace CastleDBGen
                 fileText += string.Format("\r\n{0}void Load(JSONFile@ file) {{\r\n", GetTabstring(tabDepth + 0));
                 fileText += string.Format("{0}JSONValue sheetsElem = file.GetRoot()[\"sheets\"];\r\n", GetTabstring(tabDepth + 1));
                 fileText += string.Format("{0}for (uint i = 0; i < sheetsElem.size; ++i) {{\r\n", GetTabstring(tabDepth + 1));
-                fileText += string.Format("{0}JSONValue sheet = sheetsElem[i];\r\n{0}String sheetName = sheet[\"name\"].Getstring();\r\n", GetTabstring(tabDepth + 2));
+                fileText += string.Format("{0}JSONValue sheet = sheetsElem[i];\r\n{0}String sheetName = sheet[\"name\"].GetString();\r\n", GetTabstring(tabDepth + 2));
                 bool first = true;
                 foreach (CastleSheet sheet in database.Sheets)
                 {
@@ -298,6 +362,7 @@ namespace CastleDBGen
                         continue;
                     fileText += string.Format("{0}{2} (sheetName == \"{1}\") {{\r\n", GetTabstring(tabDepth + 2), sheet.Name, first ? "if" : "else if");
                     fileText += string.Format("{0}JSONValue linesElem = sheet[\"lines\"];\r\n", GetTabstring(tabDepth + 3));
+                    fileText += string.Format("{0}{1}Properties = sheet[\"props\"];\r\n", GetTabstring(tabDepth + 3), sheet.Name);
                     fileText += string.Format("{0}for (uint j = 0; j < linesElem.size; ++j) {{\r\n", GetTabstring(tabDepth + 3));
                     fileText += string.Format("{0}{1}@ val = {1}();\r\n{0}val.Load(linesElem[j]);\r\n{0}{1}List.Push(val);\r\n", GetTabstring(tabDepth + 4), sheet.Name);
                     fileText += string.Format("{0}}}\r\n", GetTabstring(tabDepth + 3));
@@ -308,7 +373,7 @@ namespace CastleDBGen
                 // Write reference resolving code
                 foreach (CastleSheet sheet in database.Sheets)
                 {
-                    if (sheet.HasReferences())
+                    if (sheet.HasReferences(database))
                     {
                         fileText += string.Format("{0}for (uint i = 0; i < {1}List.length; ++i)\r\n", GetTabstring(tabDepth + 1), sheet.Name);
                         fileText += string.Format("{0}{1}List[i].ResolveReferences(this);\r\n", GetTabstring(tabDepth + 2), sheet.Name);
@@ -330,7 +395,9 @@ namespace CastleDBGen
                 // Write reference resolving code
                 foreach (CastleSheet sheet in database.Sheets)
                 {
-                    if (sheet.HasReferences())
+                    if (sheet.Name.Contains("@"))
+                        continue;
+                    if (sheet.HasReferences(database))
                     {
                         fileText += string.Format("{0}for (uint i = 0; i < {1}List.length; ++i)\r\n", GetTabstring(tabDepth + 1), sheet.Name);
                         fileText += string.Format("{0}{1}List[i].ResolveReferences(this);\r\n", GetTabstring(tabDepth + 2), sheet.Name);
@@ -355,5 +422,62 @@ namespace CastleDBGen
                 fileText += "\r\n}\r\n";
             System.IO.File.WriteAllText(fileBase, fileText);
         }
+
+        static readonly string asCastleTileCode =
+@"class CastleTile
+{
+    String file;
+    int x;
+    int y;
+    int size = 16;
+    int width = 1;
+    int height = 1;
+    
+    void Load(JSONValue&in jsonValue)
+    {
+        file = jsonValue[""file""].GetString();
+        x = jsonValue[""x""].GetInt();
+        y = jsonValue[""y""].GetInt();
+        if (jsonValue[""size""].isNull == false)
+            size = jsonValue[""size""].GetInt();
+        if (jsonValue[""width""].isNull == false)
+            width = jsonValue[""width""].GetInt();
+        if (jsonValue[""height""].isNull == false)
+            height = jsonValue[""height""].GetInt();
+    }
+}
+";
+
+        static readonly string asLayerClasses =
+@"class CastleTileLayer
+{
+    String file;
+    String data;
+    int size;
+    int stride;
+    
+    void Load(JSONValue&in jsonValue)
+    {
+        if (jsonValue.isNull == false)
+        {
+            file = jsonValue[""file""].GetString();
+            data = jsonValue[""data""].GetString();
+            size = jsonValue[""size""].GetInt();
+            stride = jsonValue[""stride""].GetInt();
+        }
+    }
+}
+
+class CastleDataLayer
+{
+    String data;
+    
+    void Load(JSONValue&in jsonValue)
+    {
+        if (value.isNull == false)
+            data = value.GetString();
+    }
+}
+";
     }
 }

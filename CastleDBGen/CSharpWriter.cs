@@ -199,7 +199,9 @@ namespace CastleDBGen
             // Write reference resolving code
             foreach (CastleSheet sheet in database.Sheets)
             {
-                if (sheet.HasReferences())
+                if (sheet.Name.Contains("@"))
+                    continue;
+                if (sheet.HasReferences(database))
                 {
                     fileText += string.Format("{0}for (int i = 0; i < {1}List.Count; ++i)\r\n", GetTabstring(tabDepth + 1), sheet.Name);
                     fileText += string.Format("{0}{1}List[i].ResolveReferences(this);\r\n", GetTabstring(tabDepth + 2), sheet.Name);
