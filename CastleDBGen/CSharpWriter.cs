@@ -128,7 +128,7 @@ namespace CastleDBGen
                             classStr += string.Format("{0}{1} = uint.Parse(value.Property(\"{1}\").Value.ToString());\r\n", GetTabstring(tabDepth + 1), col.Name);
                             break;
                         case CastleType.Float:
-                            classStr += string.Format("{0}{1} = float.Parse(value.Property(\"{1}\").Value.ToString());r\n", GetTabstring(tabDepth + 1), col.Name);
+                            classStr += string.Format("{0}{1} = float.Parse(value.Property(\"{1}\").Value.ToString());\r\n", GetTabstring(tabDepth + 1), col.Name);
                             break;
                         case CastleType.Integer:
                             classStr += string.Format("{0}{1} = int.Parse(value.Property(\"{1}\").Value.ToString());\r\n", GetTabstring(tabDepth + 1), col.Name);
