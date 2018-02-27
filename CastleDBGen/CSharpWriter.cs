@@ -77,6 +77,9 @@ namespace CastleDBGen
                         case CastleType.Integer:
                             classStr += string.Format(ASProperty, "int", column.Name, GetTabstring(tabDepth + 0));
                             break;
+						case CastleType.Float:
+							classStr += string.Format(ASProperty, "float", column.Name, GetTabstring(tabDepth + 0));
+							break;
                         case CastleType.Layer:
                             errors.Add(string.Format("Sheet {0}, type {1} unsupported", column.Name, column.TypeID.ToString()));
                             break;
